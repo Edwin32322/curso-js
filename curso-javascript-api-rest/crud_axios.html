@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD API REST AXIOS</title>
+</head>
+
+<body>
+    <h1>CRUD API REST AXIOS</h1>
+    <section class="crud">
+        <article>
+            <h2 class="crud-title">Agregar Producto</h2>
+            <form action="" class="crud-form">
+                <input type="text" name="nombre" id="" placeholder="Nombre" required>
+                <br>
+                <input type="text" name="categoria" placeholder="Categoría" id="" required>
+                <br>
+                <input type="submit" value="Enviar">
+                <input type="hidden" name="id">
+            </form>
+        </article>
+        <article>
+            <h2>Ver productos</h2>
+            <table class="crud-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </article>
+    </section>
+    <template id="crud-template">
+        <tr>
+            <td class="nombre"></td>
+            <td class="categoria"></td>
+            <td>
+                <button class="edit">Actualizar</button>
+                <button class="delete">Eliminar</button>
+            </td>
+        </tr>
+    </template>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const $table = document.querySelector(".crud-table")
+        const $title = document.querySelector(".crud-title")
+        const $form = document.querySelector(".crud-form")
+        const $template = document.querySelector("#crud-template").content
+        const fragment = document.createDocumentFragment()
+        async function getAllProducts() {
+            const response = await axios.get("http://localhost:3000/productos")
+            const data = response.data
+            data.forEach(el => {
+                $template.querySelector(".nombre").textContent = el.nombre
+                $template.querySelector(".categoria").textContent = el.categoria
+                $template.querySelector(".edit").dataset.id = el.id
+                $template.querySelector(".edit").dataset.nombre = el.nombre
+                $template.querySelector(".edit").dataset.categoria = el.categoria
+                $template.querySelector(".delete").dataset.id = el.id
+                let $clone = document.importNode($template, true)
+                fragment.appendChild($clone)
+            })
+            $table.querySelector("tbody").appendChild(fragment)
+        }
+        document.addEventListener("click", async (e) => {
+
+            if (e.target.matches(".delete")) {
+                try {
+                    await axios.delete("http://localhost:3000/productos/" + e.target.dataset.id)
+                } catch (e) {
+                    let message = e.statusText || "OCURRIÓ UN ERROR"
+                    $table.insertAdjacentHTML("afterend", `<p>Error: ${e} </p>`)
+                }
+            }
+            if (e.target.matches(".edit")) {
+                $title.textContent = "Editar producto"
+                $form.nombre.value = e.target.dataset.nombre
+                $form.categoria.value = e.target.dataset.categoria
+                $form.id.value = e.target.dataset.id
+            }
+        })
+        document.addEventListener("submit", async (e) => {
+            if (e.target === $form) {
+                //Crear
+                e.preventDefault()
+                if (!e.target.id.value) {
+                    try {
+                        await axios.post("http://localhost:3000/productos",
+                            {
+                                nombre: e.target.nombre.value,
+                                categoria: e.target.categoria.value
+                            }
+                        )
+                    } catch (e) {
+                        let message = e.statusText || "OCURRIÓ UN ERROR"
+                        $table.insertAdjacentHTML("afterend", `<p>Error: ${e} </p>`)
+                    }
+                } else {
+                    try {
+                        await axios.put("http://localhost:3000/productos/" + e.target.id.value,
+                            {
+                                nombre: e.target.nombre.value,
+                                categoria: e.target.categoria.value
+                            }
+                        )
+                    } catch (e) {
+                        let message = e.statusText || "OCURRIÓ UN ERROR"
+                        $table.insertAdjacentHTML("afterend", `<p>Error: ${e} </p>`)
+                    }
+                    $form.id.value = ""
+                }
+            }
+            $form.reset()
+        })
+
+        document.addEventListener("DOMContentLoaded", getAllProducts)
+    </script>
+</body>
+
+</html>

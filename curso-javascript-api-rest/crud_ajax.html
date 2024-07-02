@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD API REST AJAX</title>
+</head>
+
+<body>
+    <h1>CRUD API REST AJAX</h1>
+    <section class="crud">
+        <article>
+            <h2 class="crud-title">Agregar Producto</h2>
+            <form action="" class="crud-form">
+                <input type="text" name="nombre" id="" placeholder="Nombre" required>
+                <br>
+                <input type="text" name="categoria" placeholder="Categoría" id="" required>
+                <br>
+                <input type="submit" class="submit" value="Enviar">
+                <input type="hidden" name="id">
+            </form>
+        </article>
+        <article>
+            <h2>Ver productos</h2>
+            <table class="crud-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </article>
+    </section>
+    <template id="crud-template">
+        <tr>
+            <td class="nombre"></td>
+            <td class="categoria"></td>
+            <td>
+                <button class="edit">Actualizar</button>
+                <button class="delete">Eliminar</button>
+            </td>
+        </tr>
+    </template>
+    <script>
+        const $table = document.querySelector(".crud-table")
+        const $title = document.querySelector(".crud-title")
+        const $form = document.querySelector(".crud-form")
+        const $template = document.getElementById("crud-template").content
+        const fragment = document.createDocumentFragment()
+        const ajax = (options) => {
+            let { url, method, success, error, data } = options
+            const xhr = new XMLHttpRequest()
+            xhr.addEventListener("readystatechange", (e) => {
+                if (xhr.readyState !== 4) return
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    let json = JSON.parse(xhr.responseText)
+                    success(json)
+                } else {
+                    let message = xhr.statusText || "OCURRIÓ UN ERROR"
+                    error(`Error ${xhr.status}-${message}`)
+                }
+            })
+            xhr.open(method || "GET", url)
+            xhr.setRequestHeader("Content-Type", "application/json; charset=utf-8")
+            xhr.send(JSON.stringify(data))
+        }
+        function getAllProducts() {
+            ajax(
+                {
+                    method: "GET",
+                    url: "http://localhost:3000/productos",
+                    success: (res) => {
+                        console.log(res)
+                        res.forEach(el => {
+                            $template.querySelector(".nombre").textContent = el.nombre
+                            $template.querySelector(".categoria").textContent = el.categoria
+                            $template.querySelector(".edit").dataset.id = el.id
+                            $template.querySelector(".edit").dataset.nombre = el.nombre
+                            $template.querySelector(".edit").dataset.categoria = el.categoria
+                            $template.querySelector(".delete").dataset.id = el.id
+                            let $clone = document.importNode($template, true)
+                            fragment.appendChild($clone)
+                        })
+                        $table.querySelector("tbody").appendChild(fragment)
+                    },
+                    error: (error) => {
+                        console.error(error)
+                        $table.insertAdjacentHTML("afterend", `<p>${error}</p>`)
+                    }
+                }
+            )
+        }
+        document.addEventListener("DOMContentLoaded", getAllProducts)
+
+        document.addEventListener("submit", (e) => {
+            if (e.target === $form) {
+                //Crear
+                e.preventDefault()
+                if (!e.target.id.value) {
+                    ajax({
+                        method: "POST",
+                        url: "http://localhost:3000/productos",
+                        success: (res) => {
+                            location.reload()
+                        },
+                        error: (error) => {
+                            $form.insertAdjacentHTML("afterend", `<p>${error}</p>`)
+                        },
+                        data: {
+                            nombre: e.target.nombre.value,
+                            categoria: e.target.categoria.value
+                        }
+                    })
+                } else {
+                    //Actualizar
+                    ajax({
+                        method: "PUT",
+                        url: "http://localhost:3000/productos/" + e.target.id.value,
+                        success: (res) => {
+                            location.reload()
+                        },
+                        error: (error) => {
+                            $form.insertAdjacentHTML("afterend", `<p>${error}</p>`)
+                        },
+                        data: {
+                            nombre: e.target.nombre.value,
+                            categoria: e.target.categoria.value
+                        }
+                    })
+                    $form.id.value = ""
+                }
+            }
+            $form.reset()
+        })
+
+        document.addEventListener("click", (e) => {
+            if (e.target.matches(".delete")) {
+                console.log(e.target.dataset.id)
+                ajax({
+                    method: "DELETE",
+                    url: `http://localhost:3000/productos/${e.target.dataset.id}`,
+                    success: (res) => {
+                        console.log(res)
+                    },
+                    error: (error) => {
+                        console.error(error)
+                    }
+                })
+            }
+
+            if (e.target.matches(".edit")) {
+                $title.textContent = "Editar producto"
+                $form.nombre.value = e.target.dataset.nombre
+                $form.categoria.value = e.target.dataset.categoria
+                $form.id.value = e.target.dataset.id
+            }
+        })
+    </script>
+</body>
+
+</html>

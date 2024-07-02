@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incluir HTML con AJAX</title>
+    <link rel="stylesheet" href="assets/css/home.css">
+    <script src="./assets/include-html.js"></script>
+</head>
+
+<body>
+    <div data-include="assets/header.html"></div>
+    <main class="container">
+
+    </main>
+    <div data-include="assets/footer.html"></div>
+    <script>
+        $main = document.querySelector("main")
+
+        function getHTML(options) {
+            let { url, success, error } = options
+            const xhr = new XMLHttpRequest()
+            xhr.addEventListener("readystatechange", (e) => {
+                if (xhr.readyState !== 4) return
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    let html = xhr.responseText
+                    success(html)
+                } else {
+                    let message = xhr.statusText || "OCURRIÓ UN ERROR"
+                    error(`ERROR: ${xhr.statusText}- ${message}`)
+                }
+            })
+            xhr.open("GET", url)
+            xhr.setRequestHeader("Content-Type", "text/html;charset=utf-8")
+            xhr.send()
+        }
+
+        document.addEventListener("DOMContentLoaded", (e) => {
+            getHTML({
+                url: "assets/home.html",
+                success: (html) => $main.innerHTML = html,
+                error: (err) => $main.innerHTML = `<h1>${err}</h1>`
+            })
+        })
+        document.addEventListener("click", (e) => {
+            if (e.target.matches(".menu a")) {
+                e.preventDefault()
+                getHTML({
+                    url: e.target.href,
+                    success: (html) => $main.innerHTML = html,
+                    error: (err) => $main.innerHTML = `<h1>${err}</h1>`
+                })
+            }
+        })
+    </script>
+
+
+</body>
+
+</html>
